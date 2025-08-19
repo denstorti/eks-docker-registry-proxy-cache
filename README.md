@@ -22,16 +22,6 @@ eksctl create cluster --name eks-docker-registry-proxy-cache --region us-east-1 
 aws eks update-kubeconfig --name="eks-docker-registry-proxy-cache"
 ```
 
-# Check current context
-
-```
-kubectl config current-context
-```
-
-```
-kubectl get po -A
-```
-
 # Deploy Docker Registry Helm Chart
 
 https://github.com/twuni/docker-registry.helm
@@ -46,6 +36,7 @@ Install the chart:
 helm upgrade docker-registry twuni/docker-registry --namespace docker-registry-proxy-cache --create-namespace --values values.yaml
 ```
 
+
 # Check the status of the deployment
 
 ```
@@ -57,6 +48,23 @@ Should return:
 ```
 {"repositories":[]}
 ```
+
+# Set proxy (quay.io)
+
+```
+kubectl create secret -n docker-registry-proxy-cache generic regcred --from-literal=proxyUsername=XXX --from-literal=proxyPassword=XXX
+```
+
+Set `proxy.secretRef` to `regcred` in `values.yaml`.
+
+
+# S3 backend
+
+```
+kubectl create secret -n docker-registry-proxy-cache generic s3-credentials --from-literal=s3AccessKey=XXX --from-literal=s3SecretKey=XXX
+```
+
+Set `secrets.s3.secretRef` to `s3-credentials` in `values.yaml`.
 
 # Configure TLS (self-signed) - Didn't work
 
@@ -90,7 +98,6 @@ Problem: every node needs to trust the CA, `preBootstrapCommands` copying CA fro
 # Configure TLS (NLB with TLS + cert-manager + Private CA)
 
 Install ALB controller (https://docs.aws.amazon.com/eks/latest/userguide/lbc-helm.html):
-
 
 Cons:
 - Node --> NLB --> Svc --> Registry pod
